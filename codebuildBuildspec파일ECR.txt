@@ -1,0 +1,29 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - python -m py_compile src/app.py
+      - mv src/__pycache__/* app.pyc
+      - aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 856363718815.dkr.ecr.ap-northeast-1.amazonaws.com
+  
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...   
+      - latest=$(date +'%y%m%d%H%M%S')
+      - docker build -t ecs_test:$latest ./
+      - docker tag ecs_test:$latest 856363718815.dkr.ecr.ap-northeast-1.amazonaws.com/ecs_test:$latest
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image...
+      - docker push 856363718815.dkr.ecr.ap-northeast-1.amazonaws.com/ecs_test:$latest
+      
+artifacts:
+  files:
+    - scripts/**/*
+    - appspec.yml
+  name: wsi-app-$(date+%Y%m%d%H%M%S).zip
+  discard-paths: no
